@@ -804,11 +804,6 @@ async function markReviewed(){
 $("submitBtn").addEventListener("click", async ()=>{
   const btn = $("submitBtn");
 
-  /* نفتح تبويبًا فارغًا الآن — داخل ضغطة المستخدم — حتى لا يحجبه المتصفح لاحقًا.
-     بعد نجاح الإرسال نوجّهه لواتساب، وتبقى صفحة النموذج مفتوحة خلفه. */
-  let waWin = null;
-  try { waWin = window.open("", "_blank"); } catch(e){}
-
   btn.disabled = true; btn.textContent = "جارٍ الإرسال…";
   $("e7").classList.remove("show");
 
@@ -817,7 +812,6 @@ $("submitBtn").addEventListener("click", async ()=>{
   btn.disabled = false; btn.textContent = "إرسال المشاركة";
 
   if(!out.ok){
-    try { if(waWin && !waWin.closed) waWin.close(); } catch(e){}
     $("e7").innerHTML =
       "تعذّر الإرسال. تأكد من الاتصال وحاول مرة أخرى، " +
       "أو راسلنا على واتساب " +
@@ -828,15 +822,11 @@ $("submitBtn").addEventListener("click", async ()=>{
     return;
   }
 
-  /* واتساب يفتح تلقائيًا برسالة التأكيد، والنموذج ينتقل لشاشة الشكر خلفه */
+  /* رسالة التأكيد */
   const waTxt = `تم إرسال تجربتي — رقم المشاركة ${recId}`;
-  const waUrl = `https://wa.me/${CONFIG.WA_NUMBER}?text=${encodeURIComponent(waTxt)}`;
-  $("waBtn").href = waUrl;
+  const waEnc = encodeURIComponent(waTxt);
+  $("waBtn").href = `https://wa.me/${CONFIG.WA_NUMBER}?text=${waEnc}`;
   $("waBack").style.display = "block";
-  try {
-    if(waWin && !waWin.closed) waWin.location.href = waUrl;
-    else window.open(waUrl, "_blank");
-  } catch(e){}
 
   $("doneMsg").innerHTML = isFull()
     ? `بعد المراجعة يصلك <b>كود خصم ${AR(FULL)}٪</b> على واتساب خلال <b>٦ ساعات</b>.`
@@ -850,7 +840,14 @@ $("submitBtn").addEventListener("click", async ()=>{
     $("setupWarn").style.display = "block";
   }
 
+  /* أولًا ننقل الصفحة لشاشة الشكر، ثم نستدعي تطبيق واتساب.
+     رابط whatsapp:// يفتح التطبيق دون أن يغادر المتصفح الصفحة،
+     فيجد العميل نفسه على شاشة الشكر وبطاقة الآيفون حين يرجع. */
   goDone();
+  setTimeout(()=>{
+    try { window.location.href = `whatsapp://send?phone=${CONFIG.WA_NUMBER}&text=${waEnc}`; }
+    catch(e){}
+  }, 350);
 });
 
 /* الانتقال لشاشة الشكر */

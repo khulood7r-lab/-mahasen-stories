@@ -167,6 +167,21 @@ textarea{resize:vertical;min-height:130px;line-height:1.8}
 .ask p{font-size:14px;margin:0 0 14px;max-width:none;line-height:1.85;text-align:start}
 .ask a{display:block;text-align:center;background:var(--navy);color:#fff;text-decoration:none;
   padding:15px;border-radius:11px;font-weight:700;font-size:15.5px}
+.over{position:fixed;inset:0;z-index:60;background:var(--cream);display:none;
+  align-items:center;justify-content:center;padding:28px;text-align:center}
+.over.show{display:flex;animation:in .25s ease both}
+.over .in{max-width:380px}
+.over .tick{width:68px;height:68px;border-radius:50%;background:var(--band);
+  border:1.5px solid var(--ok);color:var(--ok);font-size:32px;
+  display:flex;align-items:center;justify-content:center;margin:0 auto 18px}
+.over h2{font-size:23px;font-weight:700;margin:0 0 10px;color:var(--navy)}
+.over p{font-size:15.5px;line-height:1.95;color:var(--ink);margin:0 0 6px}
+.over .sub{font-size:13px;color:var(--muted);margin-top:16px}
+.over .dots span{display:inline-block;width:7px;height:7px;border-radius:50%;
+  background:var(--gold);margin:0 3px;animation:bob .9s infinite}
+.over .dots span:nth-child(2){animation-delay:.15s}
+.over .dots span:nth-child(3){animation-delay:.3s}
+@keyframes bob{0%,100%{opacity:.25;transform:translateY(0)}50%{opacity:1;transform:translateY(-5px)}}
 .won{background:var(--card);border:1.5px dashed var(--line);border-radius:14px;
   padding:20px 18px;margin-top:14px;text-align:start;opacity:.6;
   transition:opacity .4s ease,border-color .4s ease,background .4s ease}
@@ -380,6 +395,18 @@ textarea{resize:vertical;min-height:130px;line-height:1.8}
   <div class="nav"><button class="btn btn-ghost" data-back>رجوع</button><button class="btn btn-primary" id="submitBtn">إرسال المشاركة</button></div>
 </section>
 
+<!-- شاشة الانتقال إلى واتساب -->
+<div class="over" id="overBox">
+  <div class="in">
+    <div class="tick">✓</div>
+    <h2>وصلتنا تجربتك</h2>
+    <p>
+      جاري فتح الواتساب لإرسال مشاركتك للفريق
+      <span class="dots"><span></span><span></span><span></span></span>
+    </p>
+  </div>
+</div>
+
 <!-- ========== تم ========== -->
 <section class="screen" id="s6">
   <div class="done">
@@ -424,7 +451,7 @@ textarea{resize:vertical;min-height:130px;line-height:1.8}
    =================================================================== */
 const CONFIG = {
   /* رابط الويب أب من Apps Script — ينتهي بـ /exec */
-  ENDPOINT:   "https://script.google.com/macros/s/AKfycbzrjkU-8K5XZuwYYSAqEb6AViXmH5x99DvQEP7gpVxGQ5y0ZPGGXX2tHj09bI8r-A_qXw/exec",
+  ENDPOINT:   "https://script.google.com/macros/s/AKfycbwmsPSLO5EMrWUWudJOXUeBa-rIqEnfmYI0HXGpe3OWiZj3fW14hookkiBkjYrevzVZ-w/exec",
   /* نفس كلمة السر المكتوبة في CFG.SECRET داخل الأسكربت */
   SECRET:     "mahasen-2026",
   /* رقم واتساب خدمة العملاء بصيغة دولية بدون + */
@@ -823,7 +850,10 @@ $("submitBtn").addEventListener("click", async ()=>{
   }
 
   /* رسالة التأكيد */
-  const waTxt = `تم إرسال تجربتي — رقم المشاركة ${recId}`;
+  const waTxt =
+`مرحبا فريق محاسن 🤍
+أرسلت تجربتي عبر النموذج، وهذه رسالة تأكيد رقمي لاستلام الكود.
+رقم المشاركة: ${recId}`;
   const waEnc = encodeURIComponent(waTxt);
   $("waBtn").href = `https://wa.me/${CONFIG.WA_NUMBER}?text=${waEnc}`;
   $("waBack").style.display = "block";
@@ -840,14 +870,16 @@ $("submitBtn").addEventListener("click", async ()=>{
     $("setupWarn").style.display = "block";
   }
 
-  /* أولًا ننقل الصفحة لشاشة الشكر، ثم نستدعي تطبيق واتساب.
-     رابط whatsapp:// يفتح التطبيق دون أن يغادر المتصفح الصفحة،
-     فيجد العميل نفسه على شاشة الشكر وبطاقة الآيفون حين يرجع. */
+  /* شاشة انتقال قصيرة تشرح سبب فتح واتساب، ثم يُستدعى التطبيق.
+     رابط whatsapp:// يفتح التطبيق دون مغادرة الصفحة، فيعود العميل
+     إلى شاشة الشكر وبطاقة الآيفون. */
   goDone();
+  $("overBox").classList.add("show");
   setTimeout(()=>{
     try { window.location.href = `whatsapp://send?phone=${CONFIG.WA_NUMBER}&text=${waEnc}`; }
     catch(e){}
-  }, 350);
+    setTimeout(()=> $("overBox").classList.remove("show"), 1200);
+  }, 2600);
 });
 
 /* الانتقال لشاشة الشكر */

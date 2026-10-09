@@ -167,6 +167,16 @@ textarea{resize:vertical;min-height:130px;line-height:1.8}
 .ask p{font-size:14px;margin:0 0 14px;max-width:none;line-height:1.85;text-align:start}
 .ask a{display:block;text-align:center;background:var(--navy);color:#fff;text-decoration:none;
   padding:15px;border-radius:11px;font-weight:700;font-size:15.5px}
+.cfm{display:none;background:var(--band);border:1.5px solid var(--navy);border-radius:14px;
+  padding:22px 18px;margin-top:20px;text-align:start}
+.cfm.show{display:block;animation:in .3s ease both}
+.cfm .ic{font-size:30px;line-height:1;margin-bottom:8px}
+.cfm h3{margin:0 0 8px;font-size:18px;font-weight:700;color:var(--navy)}
+.cfm p{font-size:14px;line-height:1.95;margin:0 0 16px;color:var(--ink)}
+.cfm .wabtn{display:block;text-align:center;text-decoration:none;background:#1FA855;color:#fff;
+  padding:16px;border-radius:12px;font-weight:700;font-size:16px}
+.cfm .skip{display:block;text-align:center;margin-top:12px;font-size:12.5px;
+  color:var(--muted);text-decoration:underline;cursor:pointer}
 .won{background:var(--card);border:1.5px dashed var(--line);border-radius:14px;
   padding:20px 18px;margin-top:14px;text-align:start;opacity:.6;
   transition:opacity .4s ease,border-color .4s ease,background .4s ease}
@@ -371,7 +381,18 @@ textarea{resize:vertical;min-height:130px;line-height:1.8}
 
     <div class="err" id="e7">أكمل الاسم ورقم الجوال.</div>
 
-    <div class="gift" style="margin-top:22px">
+    <div class="cfm" id="cfmBox">
+      <div class="ic">💬</div>
+      <h3>بقيت خطوة واحدة</h3>
+      <p>
+        اضغط الزر وأرسل لنا الرسالة الجاهزة على واتساب، عشان نقدر نرسل لك الكود مباشرة.
+        <br>بدونها قد لا تصلك الرسالة.
+      </p>
+      <a class="wabtn" id="waBtn" href="#" target="_blank" rel="noopener">تأكيد على واتساب</a>
+      <span class="skip" id="waSkip">تخطّي هذه الخطوة</span>
+    </div>
+
+    <div class="gift" id="giftBox" style="margin-top:22px">
       <div class="ic">🎁</div>
       <div class="big" id="giftPct">خصم ٥٠٪</div>
       <div class="ds" id="giftDesc">كود خاص بالاسم على العبوة القادمة، <b>صالح ٦ أشهر</b> من استلامه.</div>
@@ -422,6 +443,8 @@ const CONFIG = {
   ENDPOINT:   "https://script.google.com/macros/s/AKfycbzrjkU-8K5XZuwYYSAqEb6AViXmH5x99DvQEP7gpVxGQ5y0ZPGGXX2tHj09bI8r-A_qXw/exec",
   /* نفس كلمة السر المكتوبة في CFG.SECRET داخل الأسكربت */
   SECRET:     "mahasen-2026",
+  /* رقم واتساب خدمة العملاء بصيغة دولية بدون + */
+  WA_NUMBER:  "966507224502",
   REVIEW_URL: "https://mahasen.com/products/%D8%B2%D9%8A%D8%AA-%D9%85%D8%AD%D8%A7%D8%B3%D9%86-%D8%A7%D9%84%D8%B4%D8%B9%D8%B1?section=reviews",
   DRAW_DATE:  "نهاية الشهر"
 };
@@ -814,6 +837,14 @@ $("submitBtn").addEventListener("click", async ()=>{
     return;
   }
 
+  /* بعد نجاح الإرسال: خطوة تأكيد الواتساب قبل شاشة الشكر */
+  const waTxt = `تم إرسال تجربتي — رقم المشاركة ${recId}`;
+  $("waBtn").href = `https://wa.me/${CONFIG.WA_NUMBER}?text=${encodeURIComponent(waTxt)}`;
+  $("giftBox").style.display = "none";
+  btn.style.display = "none";
+  $("cfmBox").classList.add("show");
+  $("cfmBox").scrollIntoView({behavior:"smooth", block:"center"});
+
   $("doneMsg").innerHTML = isFull()
     ? `بعد المراجعة يصلك <b>كود خصم ${AR(FULL)}٪</b> على واتساب خلال <b>٦ ساعات</b>.`
     : `بعد المراجعة يُضاف <b>${AR(WALLET)} ريال</b> إلى محفظتك، ويصلك تأكيد على واتساب خلال <b>٦ ساعات</b>.`;
@@ -826,6 +857,10 @@ $("submitBtn").addEventListener("click", async ()=>{
     $("setupWarn").style.display = "block";
   }
 
+});
+
+/* الانتقال لشاشة الشكر */
+function goDone(){
   step = LAST + 1;
   document.querySelectorAll(".screen").forEach(s=>s.classList.remove("on"));
   $("s6").classList.add("on");
@@ -835,7 +870,10 @@ $("submitBtn").addEventListener("click", async ()=>{
     ? `كود الخصم: <b>${AR(FULL)}٪</b>`
     : `مكافأتك: <b>${AR(WALLET)} ريال</b>`;
   window.scrollTo({top:0, behavior:"smooth"});
-});
+}
+/* الضغط يفتح واتساب في تبويب جديد ثم ينتقل للشكر */
+$("waBtn").addEventListener("click", ()=> setTimeout(goDone, 500));
+$("waSkip").addEventListener("click", goDone);
 
 /* بعد الضغط على رابط التقييم تظهر مفاجأة السحب */
 $("reviewLink").addEventListener("click", ()=>{

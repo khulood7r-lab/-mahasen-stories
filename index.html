@@ -190,6 +190,8 @@ textarea{resize:vertical;min-height:130px;line-height:1.8}
 .over .dots span:nth-child(2){animation-delay:.15s}
 .over .dots span:nth-child(3){animation-delay:.3s}
 @keyframes bob{0%,100%{opacity:.25;transform:translateY(0)}50%{opacity:1;transform:translateY(-5px)}}
+.skip2{display:block;text-align:center;margin-top:14px;font-size:12.5px;
+  color:var(--muted);text-decoration:underline;cursor:pointer}
 .won{background:var(--card);border:1.5px dashed var(--line);border-radius:14px;
   padding:20px 18px;margin-top:14px;text-align:start;opacity:.6;
   transition:opacity .4s ease,border-color .4s ease,background .4s ease}
@@ -425,21 +427,22 @@ textarea{resize:vertical;min-height:130px;line-height:1.8}
     <p id="waBack" style="display:none;font-size:13px;margin-top:-6px">
       لم يفتح واتساب؟
       <a id="waBtn" href="#" target="_blank" rel="noopener"
-         style="color:var(--navy);font-weight:700;text-decoration:underline">أرسل رسالة التأكيد من هنا</a>
+         style="color:var(--navy);font-weight:700;text-decoration:underline">افتحه من هنا</a>
     </p>
 
     <div class="won" id="wonBox">
       <div class="ic">📱</div>
       <span class="cond" id="wonCond">🔒 بكتابة تقييمك · اختياري</span>
       <h3 id="wonTitle">احتمالية الفوز بآيفون</h3>
-      <p id="wonBody">قيّم تجربتك من الرابط بالأسفل وتدخل السحب.</p>
+      <p id="wonBody">قيّم تجربتك من الزر بالأسفل وتدخل السحب.</p>
     </div>
 
     <div class="ask" id="askBox">
       <span class="badge">خطوة أخيرة · اختيارية</span>
       <h3>ممكن خدمة بسيطة الله يسعدك؟ 🤍</h3>
-      <p>تقييمك في المتجر يزيدنا ثقة، ويحفّز غيرك يجرّب.</p>
-      <a id="reviewLink" href="#" target="_blank" rel="noopener">كتابة التقييم في المتجر</a>
+      <p>تقييمك في المتجر يزيدنا ثقة، ويحفّز غيرك يجرّب — وبه تدخل السحب على آيفون.</p>
+      <a id="reviewLink" href="javascript:void 0">قيّم الآن وادخل السحب</a>
+      <span class="skip2" id="skipReview">تخطّي التقييم ومتابعة إرسال مشاركتك</span>
       <div id="setupWarn" style="display:none;margin-top:12px;font-size:12px;color:var(--bad);font-weight:700">
         ⚠ للإعداد فقط: لم يُضبط REVIEW_URL بعد — ضعي رابط صفحة المنتج في زد أعلى الكود.
       </div>
@@ -921,7 +924,6 @@ $("submitBtn").addEventListener("click", async ()=>{
 رقم المشاركة: ${recId}`;
   const waEnc = encodeURIComponent(waTxt);
   $("waBtn").href = `https://wa.me/${CONFIG.WA_NUMBER}?text=${waEnc}`;
-  $("waBack").style.display = "block";
 
   $("doneMsg").innerHTML = isFull()
     ? `بعد المراجعة يصلك <b>كود خصم ${AR(FULL)}٪</b> على واتساب خلال <b>٦ ساعات</b>.`
@@ -938,15 +940,38 @@ $("submitBtn").addEventListener("click", async ()=>{
   /* شاشة انتقال قصيرة تشرح سبب فتح واتساب، ثم يُستدعى التطبيق.
      رابط whatsapp:// يفتح التطبيق دون مغادرة الصفحة، فيعود العميل
      إلى شاشة الشكر وبطاقة الآيفون. */
+  WA_LINK = `whatsapp://send?phone=${CONFIG.WA_NUMBER}&text=${waEnc}`;
   goDone();
+  $("overBox").classList.remove("show");
+});
+
+/* ===================== إجراءات شاشة الشكر ===================== */
+let WA_LINK = "";
+
+function openWhatsApp(){
+  $("waBack").style.display = "block";
   $("overTick").classList.add("ok");
   $("overTitle").textContent = "وصلتنا تجربتك";
   $("overText").textContent  = "جاري فتح الواتساب لإرسال مشاركتك للفريق";
+  $("overBox").classList.add("show");
+  setTimeout(()=>{ try{ window.location.href = WA_LINK; }catch(e){} }, 300);
+}
+
+/* قيّم الآن: يفتح واتساب، وتتحوّل الصفحة خلفه لصفحة التقييم.
+   فحين يرسل الرسالة ويعود للمتصفح يجد التقييم أمامه بدل أن ينساه. */
+$("reviewLink").addEventListener("click", e=>{
+  e.preventDefault();
+  if(!reviewed){ reviewed = true; markReviewed(); lightWon(); }
+  openWhatsApp();
   setTimeout(()=>{
-    try { window.location.href = `whatsapp://send?phone=${CONFIG.WA_NUMBER}&text=${waEnc}`; }
-    catch(e){}
-    setTimeout(()=> $("overBox").classList.remove("show"), 1200);
-  }, 1800);
+    if(CONFIG.REVIEW_URL){ try{ window.location.href = CONFIG.REVIEW_URL; }catch(e){} }
+  }, 1900);
+});
+
+/* تخطّي التقييم: واتساب فقط، ويبقى على شاشة الشكر */
+$("skipReview").addEventListener("click", ()=>{
+  openWhatsApp();
+  setTimeout(()=> $("overBox").classList.remove("show"), 2600);
 });
 
 /* الانتقال لشاشة الشكر */
@@ -963,20 +988,14 @@ function goDone(){
 }
 
 
-/* بعد الضغط على رابط التقييم تظهر مفاجأة السحب */
-$("reviewLink").addEventListener("click", ()=>{
-  if(reviewed) return;
-  reviewed = true;
-  markReviewed();
-  setTimeout(()=>{
-    $("wonCond").textContent  = "✓ تحت المعالجة";
-    $("wonTitle").textContent = "طلبك تحت المعالجة";
-    $("wonBody").innerHTML =
-      `شكرًا لك 🤍 بعد التحقق من تقييمك يُرفع اسمك في السحب، ويُعلن الفائز <b>${CONFIG.DRAW_DATE}</b>.`;
-    $("wonBox").classList.add("on");
-    $("wonBox").scrollIntoView({behavior:"smooth", block:"center"});
-  }, 900);
-});
+/* إضاءة بطاقة السحب بعد طلب التقييم */
+function lightWon(){
+  $("wonCond").textContent  = "✓ تحت المعالجة";
+  $("wonTitle").textContent = "طلبك تحت المعالجة";
+  $("wonBody").innerHTML =
+    `شكرًا لك 🤍 بعد التحقق من تقييمك يُرفع اسمك في السحب، ويُعلن الفائز <b>${CONFIG.DRAW_DATE}</b>.`;
+  $("wonBox").classList.add("on");
+}
 
 meter();
 </script>
